@@ -199,22 +199,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is open source and available under the MIT License.
 
-## 👥 Authors
 
-- Namra Gajera - [@namragajera77](https://github.com/namragajera77)
-
-## 🙏 Acknowledgments
-
-- UIDAI for Aadhaar data standards
-- Streamlit community for excellent documentation
-- Plotly for powerful visualization tools
-
-## 📞 Support
-
-For issues, questions, or suggestions:
-- Open an issue on [GitHub](https://github.com/namragajera77/uiadi/issues)
-- Contact: [Your Email/Contact Info]
-
----
 
 **Made with ❤️ for better data insights**
