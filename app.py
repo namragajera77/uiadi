@@ -159,9 +159,23 @@ def normalize_common(df: pd.DataFrame) -> pd.DataFrame:
 
 def add_total_column(df: pd.DataFrame, value_cols: list[str], total_name: str = "total") -> pd.DataFrame:
     df = df.copy()
-    for col in value_cols:
+    # Check which columns exist
+    existing_cols = [col for col in value_cols if col in df.columns]
+    missing_cols = [col for col in value_cols if col not in df.columns]
+    
+    if missing_cols:
+        st.warning(f"Missing columns: {', '.join(missing_cols)}. Available columns: {', '.join(df.columns.tolist())}")
+    
+    # Only process existing columns
+    for col in existing_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
-    df[total_name] = df[value_cols].sum(axis=1)
+    
+    # Calculate total from existing columns only
+    if existing_cols:
+        df[total_name] = df[existing_cols].sum(axis=1)
+    else:
+        df[total_name] = 0
+    
     return df
 
 
@@ -217,6 +231,15 @@ with st.sidebar:
 if dataset == "Enrolment":
     paths = [uploaded_path] if uploaded_path else ENROLMENT_FILES
     df = normalize_common(load_concat(paths))
+    
+    # Show available columns for debugging
+    if df.empty:
+        st.error(f"No data loaded from files: {paths}")
+        st.stop()
+    
+    with st.expander("📋 Available Columns (Debug Info)"):
+        st.write(f"Columns in dataset: {', '.join(df.columns.tolist())}")
+    
     value_cols = ["age_0_5", "age_5_17", "age_18_greater"]
     df = add_total_column(df, value_cols, "total_enrolments")
     metric_col = "total_enrolments"
@@ -224,6 +247,14 @@ if dataset == "Enrolment":
 elif dataset == "Demographic":
     paths = [uploaded_path] if uploaded_path else DEMOGRAPHIC_FILES
     df = normalize_common(load_concat(paths))
+    
+    if df.empty:
+        st.error(f"No data loaded from files: {paths}")
+        st.stop()
+    
+    with st.expander("📋 Available Columns (Debug Info)"):
+        st.write(f"Columns in dataset: {', '.join(df.columns.tolist())}")
+    
     value_cols = ["demo_age_5_17", "demo_age_17_"]
     df = add_total_column(df, value_cols, "total_demographic")
     metric_col = "total_demographic"
@@ -231,6 +262,14 @@ elif dataset == "Demographic":
 elif dataset == "Biometric":
     paths = [uploaded_path] if uploaded_path else BIOMETRIC_FILES
     df = normalize_common(load_concat(paths))
+    
+    if df.empty:
+        st.error(f"No data loaded from files: {paths}")
+        st.stop()
+    
+    with st.expander("📋 Available Columns (Debug Info)"):
+        st.write(f"Columns in dataset: {', '.join(df.columns.tolist())}")
+    
     value_cols = ["bio_age_5_17", "bio_age_17_"]
     df = add_total_column(df, value_cols, "total_biometric")
     metric_col = "total_biometric"
