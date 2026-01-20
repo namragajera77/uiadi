@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 import streamlit as st
-import plotly.express as px
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
@@ -45,21 +44,17 @@ def normalize(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.copy()
 
-    # normalize column names
     df.columns = (
-        df.columns
-        .astype(str)
+        df.columns.astype(str)
         .str.strip()
         .str.lower()
         .str.replace(" ", "_")
         .str.replace("-", "_")
     )
 
-    # date
     if "date" in df.columns:
         df["date"] = pd.to_datetime(df["date"], errors="coerce", dayfirst=True)
 
-    # location fields
     for col in ["state", "district"]:
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip()
@@ -77,7 +72,7 @@ def normalize(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-# ---------------- SAFE TOTAL COLUMN ----------------
+# ---------------- SAFE TOTAL ----------------
 def add_total(df: pd.DataFrame, cols: list[str], total_name: str):
     df = df.copy()
     for c in cols:
@@ -89,7 +84,7 @@ def add_total(df: pd.DataFrame, cols: list[str], total_name: str):
 
 # ---------------- UI ----------------
 st.title("🪪 UIDAI Aadhaar Analytics Dashboard")
-st.caption("Safe • Stable • Streamlit Cloud Ready")
+st.caption("Stable • Cloud-safe • No external dependencies")
 
 dataset = st.sidebar.radio(
     "Select Dataset",
@@ -100,17 +95,14 @@ dataset = st.sidebar.radio(
 if dataset == "Enrolment":
     df = normalize(load_files(ENROLMENT_FILES))
     df = add_total(df, ["age_0_5", "age_5_17", "age_18_greater"], "total")
-    metric = "total"
 
 elif dataset == "Demographic":
     df = normalize(load_files(DEMOGRAPHIC_FILES))
     df = add_total(df, ["demo_age_5_17", "demo_age_17_"], "total")
-    metric = "total"
 
 elif dataset == "Biometric":
     df = normalize(load_files(BIOMETRIC_FILES))
     df = add_total(df, ["bio_age_5_17", "bio_age_17_"], "total")
-    metric = "total"
 
 else:
     enr = add_total(
@@ -130,7 +122,6 @@ else:
     )
 
     key = ["date", "state", "district", "pincode", "month"]
-
     df = (
         enr.groupby(key, as_index=False)["enrolment"].sum()
         .merge(dem.groupby(key, as_index=False)["demographic"].sum(), on=key, how="outer")
@@ -139,16 +130,14 @@ else:
     )
 
     df["total"] = df[["enrolment", "demographic", "biometric"]].sum(axis=1).astype(int)
-    metric = "total"
 
-# ---------------- SAFETY CHECK ----------------
+# ---------------- SAFETY ----------------
 if df.empty:
     st.error("❌ No data loaded. Check CSV file names.")
     st.stop()
 
-# ---------------- FILTERS ----------------
+# ---------------- FILTER ----------------
 min_date, max_date = df["date"].min(), df["date"].max()
-
 start, end = st.sidebar.date_input(
     "Date Range",
     (min_date.date(), max_date.date()),
@@ -159,16 +148,15 @@ fdf = df[(df["date"].dt.date >= start) & (df["date"].dt.date <= end)]
 # ---------------- METRICS ----------------
 c1, c2, c3 = st.columns(3)
 c1.metric("Records", f"{len(fdf):,}")
-c2.metric("Total Count", f"{int(fdf[metric].sum()):,}")
+c2.metric("Total Count", f"{int(fdf['total'].sum()):,}")
 c3.metric("States", fdf["state"].nunique())
 
-# ---------------- CHART ----------------
-trend = fdf.groupby("date", as_index=False)[metric].sum()
+# ---------------- TREND ----------------
+st.subheader("Trend Over Time")
+trend = fdf.groupby("date")["total"].sum()
+st.line_chart(trend)
 
-fig = px.line(trend, x="date", y=metric, title="Trend Over Time")
-st.plotly_chart(fig, width="stretch")
-
-# ---------------- DATA VIEW ----------------
+# ---------------- DATA ----------------
 st.subheader("Data Preview")
 st.dataframe(fdf.head(5000), width="stretch")
 
